@@ -5,12 +5,12 @@ BaseCaching = __import__('base_caching').BaseCaching
 
 
 class FIFOCache(BaseCaching):
-    '''FIFO Caching Class'''    
+    '''FIFO Caching Class'''
     def put(self, key, item):
         '''FIFO caching put function'''
         if key and item:
             self.cache_data[key] = item
-            
+
             if len(self.cache_data) > BaseCaching.MAX_ITEMS:
                 first_key = list(self.cache_data.keys())[0]
                 print("DISCARD:", first_key)
