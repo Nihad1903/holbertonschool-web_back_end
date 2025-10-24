@@ -1,25 +1,27 @@
 #!/usr/bin/python3
-'''LIFO Cache'''
-
-BaseCaching = __import__('base_caching').BaseCaching
+""" LIFO Caching """
+from base_caching import BaseCaching
 
 
 class LIFOCache(BaseCaching):
-    '''LIFO Caching class'''
+    """ Class that inherits from BaseCaching and is a caching system """
+    def __init__(self):
+        super().__init__()
+        self.last_key = ''
+
     def put(self, key, item):
-        '''LIFO cache put function'''
+        """ Assign to the dictionary, LIFO algorithm, add element """
         if key and item:
             self.cache_data[key] = item
-            last_index = len(self.cache_data) - 1
             if len(self.cache_data) > BaseCaching.MAX_ITEMS:
-                first_key = list(self.cache_data.keys())[last_index]
-                print("DISCARD:", first_key)
-                del self.cache_data[first_key]
+                print("DISCARD: {}".format(self.last_key))
+                self.cache_data.pop(self.last_key)
+            self.last_key = key
 
     def get(self, key):
-        '''LIFO cache get function'''
-        val = self.cache_data.get(key)
-        if val:
-            return self.cache_data[key]
-        else:
+        """ Return the value linked """
+        if key is None or self.cache_data.get(key) is None:
             return None
+        if key in self.cache_data:
+            value = self.cache_data[key]
+            return value
