@@ -10,9 +10,9 @@ class LIFOCache(BaseCaching):
         '''LIFO cache put function'''
         if key and item:
             self.cache_data[key] = item
-
+            last_index = len(self.cache_data) - 1
             if len(self.cache_data) > BaseCaching.MAX_ITEMS:
-                first_key = list(self.cache_data.keys())[-1]
+                first_key = list(self.cache_data.keys())[last_index]
                 print("DISCARD:", first_key)
                 del self.cache_data[first_key]
 
