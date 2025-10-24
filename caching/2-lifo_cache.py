@@ -7,6 +7,7 @@ BaseCaching = __import__('base_caching').BaseCaching
 class LIFOCache(BaseCaching):
     '''LIFO Caching class'''
     def put(self, key, item):
+        '''LIFO cache put function'''
         if key and item:
             self.cache_data[key] = item
 
