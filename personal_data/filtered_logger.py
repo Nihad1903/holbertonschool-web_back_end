@@ -50,19 +50,7 @@ def get_logger() -> logging.Logger:
 
 
 def get_db() -> MySQLConnection:
-    """Create and return a connection to the MySQL database.
-
-    The connection parameters (username, password, host, database name)
-    are read from environment variables:
-      - PERSONAL_DATA_DB_USERNAME (default: "root")
-      - PERSONAL_DATA_DB_PASSWORD (default: "")
-      - PERSONAL_DATA_DB_HOST (default: "localhost")
-      - PERSONAL_DATA_DB_NAME (no default, must be set)
-
-    Returns:
-        mysql.connector.connection.MySQLConnection: an active database connection.
-        The caller is responsible for closing the connection with db.close().
-    """
+    """Returns a connector to the database using environment variables"""
     return mysql.connector.connect(
         user=os.getenv("PERSONAL_DATA_DB_USERNAME", "root"),
         password=os.getenv("PERSONAL_DATA_DB_PASSWORD", ""),
