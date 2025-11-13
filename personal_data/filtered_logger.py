@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
-"""Filtered Logger File"""
+''' Logger '''
 import re
 import logging
-import os
-import mysql.connector
-from mysql.connector.connection import MySQLConnection
 from typing import List
+from os import environ
+from mysql.connector import connection
 
-
-def filter_datum(fields: List[str], redaction: str,
-                 message: str, separator: str) -> str:
-    """Filtered Datum Function"""
-    return re.sub(r'(' + '|'.join(fields) + r')=[^' + separator + r']*',
-                  lambda m: f"{m.group(1)}={redaction}", message)
+PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
 class RedactingFormatter(logging.Formatter):
-    """ Redacting Formatter class """
+    """ Redacting Formatter class
+        """
 
     REDACTION = "***"
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
@@ -27,33 +22,65 @@ class RedactingFormatter(logging.Formatter):
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
-        '''RedactingFormatter format function'''
-        record.msg = filter_datum(self.fields, self.REDACTION,
-                                  record.getMessage(), self.SEPARATOR)
-        return super().format(record)
+        '''filters values from the log record'''
+        return filter_datum(self.fields, self.REDACTION,
+                            super().format(record), self.SEPARATOR)
 
 
-PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+def get_db() -> connection.MySQLConnection:
+    '''returns a MySQL connector'''
+    username = environ.get("PERSONAL_DATA_DB_USERNAME", "root")
+    password = environ.get("PERSONAL_DATA_DB_PASSWORD", "")
+    db_host = environ.get("PERSONAL_DATA_DB_HOST", "localhost")
+    db_name = environ.get("PERSONAL_DATA_DB_NAME")
+    connector = connection.MySQLConnection(
+        user=username,
+        password=password,
+        host=db_host,
+        database=db_name)
+    return connector
 
 
 def get_logger() -> logging.Logger:
-    """Returns a configured logger for user data"""
+    '''self descriptive'''
     logger = logging.getLogger("user_data")
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(RedactingFormatter(fields=PII_FIELDS))
-
+    stream_handler.setFormatter(RedactingFormatter(PII_FIELDS))
     logger.addHandler(stream_handler)
+
     return logger
 
 
-def get_db() -> MySQLConnection:
-    """MySQLConnection get_db function"""
-    return mysql.connector.connect(
-        user=os.getenv("PERSONAL_DATA_DB_USERNAME", "root"),
-        password=os.getenv("PERSONAL_DATA_DB_PASSWORD", ""),
-        host=os.getenv("PERSONAL_DATA_DB_HOST", "localhost"),
-        database=os.getenv("PERSONAL_DATA_DB_NAME")
-    )
+def filter_datum(fields: List[str], redaction: str, message: str,
+                 separator: str) -> str:
+    '''returns the log message obfuscated'''
+    for field in fields:
+        message = re.sub(f'{field}=(.*?){separator}',
+                         f'{field}={redaction}{separator}', message)
+    return message
+
+
+def main() -> None:
+    '''driver function'''
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM users;")
+
+    headers = [field[0] for field in cursor.description]
+    logger = get_logger()
+
+    for row in cursor:
+        info_answer = ''
+        for f, p in zip(row, headers):
+            info_answer += f'{p}={(f)}; '
+        logger.info(info_answer)
+
+    cursor.close()
+    db.close()
+
+
+if __name__ == '__main__':
+    main()
