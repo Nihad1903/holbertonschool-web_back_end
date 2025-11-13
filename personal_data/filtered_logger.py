@@ -5,7 +5,8 @@ import logging
 from typing import List
 
 
-def filter_datum(fields: List[str], redaction: str, message: str, separator: str) -> str:
+def filter_datum(fields: List[str], redaction: str,
+                 message: str, separator: str) -> str:
     """Filtered Datum Function"""
     return re.sub(r'(' + '|'.join(fields) + r')=[^' + separator + r']*',
                   lambda m: f"{m.group(1)}={redaction}", message)
@@ -24,7 +25,8 @@ class RedactingFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         '''RedactingFormatter format function'''
-        record.msg = filter_datum(self.fields, self.REDACTION, record.getMessage(), self.SEPARATOR)
+        record.msg = filter_datum(self.fields,
+                                  self.REDACTION, record.getMessage(), self.SEPARATOR)
         return super().format(record)
 
 
