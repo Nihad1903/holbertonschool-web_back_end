@@ -12,7 +12,7 @@ class Auth():
         '''Require Auth function
         '''
         return False
-    
+
     def authorization_header(self, request=None) -> str:
         '''Authorization Header'''
         return None
