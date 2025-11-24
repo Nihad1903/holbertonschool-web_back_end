@@ -1,0 +1,7 @@
+Flask>=2.0,<3.0
+Flask-Cors>=3.0.8
+Jinja2>=3.0
+requests==2.18.4
+pycodestyle==2.6.0
+flask-sqlalchemy>=2.5,<3.0
+flask-jwt-extended>=4.0,<5.0
