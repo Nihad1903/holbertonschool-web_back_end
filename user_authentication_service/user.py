@@ -11,9 +11,9 @@ Base = declarative_base()
 class User(Base):
     '''User Model'''
     __tablename__ = 'users'
-    
+
     id = Column(Integer, primary_key=True)
     email = Column(String(250), primary_key=True)
     hashed_password = Column(String(250), primary_key=True)
     session_id = Column(String(250), primary_key=True)
-    reset_token = Column(String(250), primary_key=True)    
+    reset_token = Column(String(250), primary_key=True)
