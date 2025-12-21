@@ -113,3 +113,29 @@ class Cache:
         Retrieve an integer value from Redis.
         """
         return self.get(key, fn=int)
+
+    def replay(method: Callable) -> None:
+        """
+        Display the history of calls of a particular Cache method.
+    Shows how many times the method was called along with
+        the inputs and outputs of each call.
+        """
+        redis_instance = method.__self__._redis
+        method_name = method.__qualname__
+
+        # Get call count
+        calls = redis_instance.get(method_name)
+        calls = int(calls) if calls else 0
+
+        print(f"{method_name} was called {calls} times:")
+
+        # Get inputs and outputs history
+        inputs = redis_instance.lrange(f"{method_name}:inputs", 0, -1)
+        outputs = redis_instance.lrange(f"{method_name}:outputs", 0, -1)
+
+        # Display history
+        for inp, out in zip(inputs, outputs):
+            print(
+                f"{method_name}(*{inp.decode('utf-8')}) -> "
+                f"{out.decode('utf-8')}"
+            )
