@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-cache.py
+exercise.py
 
-This module provides a Cache class that wraps basic Redis operations.
-It supports storing data, retrieving data with optional type conversion,
-and counting how many times cache methods are called.
+This module provides a Cache class that wraps Redis operations.
+It supports storing data, retrieving data with optional conversion,
+counting method calls, and recording call history.
 """
 
 import redis
@@ -19,22 +19,37 @@ def count_calls(method: Callable) -> Callable:
 
     The count is stored in Redis using the method's qualified name
     as the key.
-
-    Args:
-        method (Callable): The method to decorate.
-
-    Returns:
-        Callable: The wrapped method.
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """
-        Wrapper function that increments the call count
-        and executes the original method.
-        """
-        key = method.__qualname__
-        self._redis.incr(key)
+        self._redis.incr(method.__qualname__)
         return method(self, *args, **kwargs)
+
+    return wrapper
+
+
+def call_history(method: Callable) -> Callable:
+    """
+    Decorator that stores the history of inputs and outputs for a method.
+
+    Inputs are stored in a Redis list under "<qualname>:inputs"
+    Outputs are stored in a Redis list under "<qualname>:outputs"
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        input_key = f"{method.__qualname__}:inputs"
+        output_key = f"{method.__qualname__}:outputs"
+
+        # Store input arguments
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the original method
+        result = method(self, *args, **kwargs)
+
+        # Store output
+        self._redis.rpush(output_key, result)
+
+        return result
 
     return wrapper
 
@@ -43,8 +58,8 @@ class Cache:
     """
     Cache class for interacting with a Redis datastore.
 
-    Provides methods to store data, retrieve data with optional
-    conversion, and track method call counts.
+    Provides methods to store data, retrieve data, count calls,
+    and record input/output history.
     """
 
     def __init__(self) -> None:
@@ -56,6 +71,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
@@ -77,44 +93,23 @@ class Cache:
         fn: Optional[Callable[[bytes], Any]] = None
     ) -> Any:
         """
-        Retrieve data from Redis by key.
-
-        Optionally applies a conversion function.
-
-        Args:
-            key (str): The Redis key.
-            fn (Optional[Callable[[bytes], Any]]): Conversion function.
-
-        Returns:
-            Any: The retrieved value or None if the key does not exist.
+        Retrieve data from Redis by key with optional conversion.
         """
         value = self._redis.get(key)
         if value is None:
             return None
-        if fn is not None:
+        if fn:
             return fn(value)
         return value
 
     def get_str(self, key: str) -> Optional[str]:
         """
         Retrieve a UTF-8 decoded string from Redis.
-
-        Args:
-            key (str): The Redis key.
-
-        Returns:
-            Optional[str]: The decoded string or None.
         """
         return self.get(key, fn=lambda d: d.decode("utf-8"))
 
     def get_int(self, key: str) -> Optional[int]:
         """
         Retrieve an integer value from Redis.
-
-        Args:
-            key (str): The Redis key.
-
-        Returns:
-            Optional[int]: The integer value or None.
         """
         return self.get(key, fn=int)
