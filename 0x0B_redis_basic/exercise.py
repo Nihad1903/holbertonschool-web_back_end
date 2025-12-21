@@ -2,6 +2,7 @@
 '''Exercise File'''
 import redis
 import uuid
+from typing import Union
 
 class Cache():
     '''Redis Cache Class'''
@@ -9,7 +10,7 @@ class Cache():
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    def store(self, data) -> str:
+    def store(self, data: Union[str, bytes, int, float]) -> str:
         '''Redis Cache store method'''
         key = str(uuid.uuid4())
         self._redis.set(key, data)
